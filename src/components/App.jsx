@@ -7,6 +7,7 @@ import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button.jsx/Button';
 import { FetchApi } from './FetchApi';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
@@ -14,6 +15,7 @@ export class App extends Component {
     page: 1,
     totalHits: 0,
     imageCards: [],
+    loading: false,
   };
 
   onSubmit = inputValue => {
@@ -35,24 +37,34 @@ export class App extends Component {
     ) {
       const { searchQuery, page } = this.state;
 
+      this.setState({ loading: true });
+
       const fetchResponse = FetchApi(searchQuery, page);
-      fetchResponse.then(resp => {
-        this.setState(() => ({
-          imageCards: [...this.state.imageCards, ...resp.data.hits],
-          totalHits: resp.data.totalHits,
-        }));
-      });
+      fetchResponse
+        .then(resp => {
+          this.setState(() => ({
+            imageCards: [...this.state.imageCards, ...resp.data.hits],
+            totalHits: resp.data.totalHits,
+          }));
+        })
+        .catch(() => {})
+        .finally(() => this.setState({ loading: false }));
     }
   }
 
   render() {
+    const { imageCards, loading, totalHits } = this.state;
+    const { onSubmit, onLoadBtnClick } = this;
     return (
       <div className={css.App}>
-        <Searchbar onSubmit={this.onSubmit} />
-        {this.state.imageCards.length > 0 && (
-          <ImageGallery imageCardsArray={this.state.imageCards} />
-        )}
-        {this.state.totalHits > 12 && <Button onClick={this.onLoadBtnClick} />}
+        <Searchbar onSubmit={onSubmit} />
+
+        {imageCards.length > 0 && <ImageGallery imageCardsArray={imageCards} />}
+
+        {loading && <Loader />}
+
+        {totalHits > 12 && <Button onClick={onLoadBtnClick} />}
+
         <ToastContainer position="top-center" autoClose={3000} theme="light" />
       </div>
     );
